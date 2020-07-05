@@ -1,6 +1,6 @@
 // server.js
 // where your node app starts
-require('dotenv').config()
+const dotenv = require('dotenv').config();
 const compression = require('compression');
 const cors = require('cors');
 const TrelloWebhookServer = require('@18f/trello-webhook-server');
