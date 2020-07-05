@@ -1,6 +1,6 @@
 //Script to update the webhook calls on index.html
 
-$(function() {
+/* $(function() {
     var auto_refresh = setInterval(function(){
      $.get('/webhooks', function(output) {
        var content="";
@@ -15,4 +15,4 @@ $(function() {
        }
      });
     }, 3000);
-   });
+   }); */

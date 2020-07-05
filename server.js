@@ -1,6 +1,6 @@
 // server.js
 // where your node app starts
-debugger; console.log('debugger');
+require('dotenv').config()
 const compression = require('compression');
 const cors = require('cors');
 const TrelloWebhookServer = require('@18f/trello-webhook-server');
@@ -54,7 +54,7 @@ const listener = app.listen(process.env.PORT, () => {
   
 const trelloWHServer = new TrelloWebhookServer({
   server: listener,
-  hostURL: 'https://' + process.env.PROJECT_DOMAIN + '.glitch.me/webhooks/trello',
+  hostURL: 'https://a449bef03de7.ngrok.io/webhooks/trello',  //'https://' + process.env.PROJECT_DOMAIN + '.glitch.me/webhooks/trello',
   apiKey: process.env.TRELLO_API_KEY,
   apiToken: process.env.TRELLO_API_TOKEN,
   clientSecret: process.env.SECRET
