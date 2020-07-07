@@ -1,16 +1,12 @@
-// server.js
-// where your node app starts
 const dotenv = require('dotenv').config();
 const compression = require('compression');
 const cors = require('cors');
 const TrelloWebhookServer = require('@18f/trello-webhook-server');
-const express = require('express');
 const Trello = require('trello');
+const restify = require('restify');
 
-const app = express();
+const app = restify.createServer({ name: 'Restify Server' });
 const trello = new Trello(process.env.TRELLO_API_KEY, process.env.TRELLO_API_TOKEN);
-var count = 0;
-var webhookReceived = 0;
 
 // your manifest must have appropriate CORS headers, you could also use '*'
 app.use(cors());
@@ -18,43 +14,17 @@ app.use(cors());
 // compress our client side content before sending it over the wire
 //app.use(compression());
 
-// http://expressjs.com/en/starter/static-files.html
-app.use(express.static('public'));
-
-
-
-//TRELLO WEBHOOK SERVER
 
 var trello_link = "https://trello.com";
 var output = [];
 
+const ngrok = 'https://f2c8fc4f7bf7.ngrok.io';
 
 
-// listen for requests :)
-const listener = app.listen(process.env.PORT, () => {
-  console.info(`Node Version: ${process.version}`);
-  console.log('Trello Power-Up Server listening on port ' + listener.address().port);
 
-  trelloWHServer.start(process.env.MODEL_ID)
-    .then(webhookID => {
-      console.log(`Webhook ID: ${webhookID}`);
-      trelloWHServer.on('data', event => {
-        webhookReceived += 1;
-        console.log('webhook no. ' + webhookReceived, msgText(event.action));
-        output.push(msgText(event.action));
-        processWebhook(event.action)
-      });
-    })
-    .catch(e => {
-      console.log('Error getting Trello webhook');
-      console.log(e);
-    });
-
-  });;
-  
 const trelloWHServer = new TrelloWebhookServer({
-  server: listener,
-  hostURL: 'https://a449bef03de7.ngrok.io/webhooks/trello',  //'https://' + process.env.PROJECT_DOMAIN + '.glitch.me/webhooks/trello',
+  server: app,
+  hostURL: ngrok + '/webhooks/trello',  //'https://' + process.env.PROJECT_DOMAIN + '.glitch.me/webhooks/trello',
   apiKey: process.env.TRELLO_API_KEY,
   apiToken: process.env.TRELLO_API_TOKEN,
   clientSecret: process.env.SECRET
@@ -75,19 +45,18 @@ function processWebhook(action) {
       action.data.listAfter) {
       action.type = "updateCard:idList";
     }
+    if (action.display.translationKey.includes('action_moved_card')) { return; }
 
     processCardFromWebhook(action.data, action.type);
   }
 }
 
 function processCardFromWebhook(data, actionType) {
-  count += 1;
   let allCards = trello.getCardsOnBoard(data.board.id);
 
   allCards.then((cards) => {
-    var templateCards = cards.filter(c => c.isTemplate);
-    console.log(`FILTERED CARDS ${count}:`);//,
-    //templateCards);
+    var templateCards = cards.filter(c => c.isTemplate).map(c => c.name);
+    console.log(templateCards);
   })
     .catch((error) => {
       console.log('Oops, that didn\'t work!: ' + error);
@@ -165,6 +134,10 @@ var updateCardText = function (action) {
     }
   } else if ("listAfter" in action.data && "listBefore" in action.data) {
     return (cardLink(action.data.card)) + " moved to " + action.data.listAfter.name + " by " + action.memberCreator.fullName;
+  } else if ('pos' in action.data.old) {
+    return (cardLink(action.data.card)) + " changed position, by " + action.memberCreator.fullName;
+  } else if ('isTemplate' in action.data.old) {
+    return (cardLink(action.data.card)) + " template status changed, by " + action.memberCreator.fullName;
   } else {
     return ("I don't know what to do with this:" + JSON.stringify(action));
   }
@@ -201,7 +174,28 @@ app.get("/webhooks", function (req, res, next) {
   return next();
 });
 
-/* // http://expressjs.com/en/starter/basic-routing.html
-app.get("*", function (request, response) {
-  response.sendFile(__dirname + '/public/index.html');
-}); */
+app.get('*', restify.plugins.serveStatic({
+  directory: __dirname + '/public',
+  default: 'index.html'
+}));
+
+// listen for requests :)
+app.listen(process.env.PORT, () => {
+  console.info(`Node Version: ${process.version}`);
+  console.log('Trello Power-Up Server listening on port ' + app.address().port);
+
+  trelloWHServer.start(process.env.MODEL_ID)
+    .then(webhookID => {
+      console.log(`Webhook ID: ${webhookID}`);
+      trelloWHServer.on('data', event => {
+        console.log(msgText(event.action));
+        output.push(msgText(event.action));
+        processWebhook(event.action)
+      });
+    })
+    .catch(e => {
+      console.log('Error getting Trello webhook');
+      console.log(e);
+    });
+
+});;

@@ -1,7 +1,7 @@
 //Script to update the webhook calls on index.html
 
-/* $(function() {
-    var auto_refresh = setInterval(function(){
+function refresh() {
+    //var auto_refresh = setInterval(function(){
      $.get('/webhooks', function(output) {
        var content="";
        if(output.length!==0){
@@ -14,5 +14,6 @@
          $('ul#updates').html("None yet");
        }
      });
-    }, 3000);
-   }); */
+    //}, 3000);
+   }
+   //);
