@@ -3,17 +3,27 @@
 var Promise = TrelloPowerUp.Promise;
 var t = TrelloPowerUp.iframe();
 
-var fruitSelector = document.getElementById('fruit');
+var listSelector = document.getElementById('lists');
 var vegetableSelector = document.getElementById('vegetable');
 
 t.render(function(){
   return Promise.all([
-    t.get('board', 'shared', 'fruit'),
-    t.get('board', 'private', 'vegetable')
+    t.get('card', 'shared', 'templateLists'),
+    t.get('board', 'private', 'vegetable'),
+    t.lists('id', 'name')
   ])
-  .spread(function(savedFruit, savedVegetable){
-    if(savedFruit && /[a-z]+/.test(savedFruit)){
-      fruitSelector.value = savedFruit;
+  .spread(function(savedLists, savedVegetable, templatelists){
+    
+    templatelists.map((list, i) => {
+      var item = list[i];
+      var el = document.createElement('option');
+      el.textContent = item[0];
+      el.value = item[1];
+      listSelector.appendChild(el);
+    })
+
+    if(savedLists /*&& /[a-z]+/.test(savedFruit)*/){
+      listSelector.value = savedLists;
     }
     if(savedVegetable && /[a-z]+/.test(savedVegetable)){
       vegetableSelector.value = savedVegetable;
@@ -26,7 +36,7 @@ t.render(function(){
 });
 
 document.getElementById('save').addEventListener('click', function(){
-  return t.set('board', 'private', 'vegetable', vegetableSelector.value)
+  return t.set('card', 'private', 'vegetable', vegetableSelector.value)
   .then(function(){
     return t.set('board', 'shared', 'fruit', fruitSelector.value);
   })

@@ -1,19 +1,30 @@
 <html>
-  <head>
-    <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
-    <script src="https://p.trellocdn.com/power-up.min.js"></script>
-  </head>
-  <body>
+
+<head>
+  <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+</head>
+
+<body>
+  <div id="content">
+    <h2>Template settings</h2>
+    <br />
     <div id="content">
-      <p>Tips for using attachment-sections</p>
-      <ol>
-        <li>Make sure your section feels at home on the card. It should fit in with the rest of the card and not stick out.</li>
-        <li>You can specify a height when you claim the section, and also use t.sizeTo() to make sure your section is the perfect height.</li>
-        <li>Try to keep the height of your sections to a minimum.</li>
-        <li>It should be obvious to the user what attachments went into your section. They shouldn't be left wondering were one of their attachments disappeared to.</li>
-      </ol>
-      <p class="u-quiet">Claimed attachment urls: <span id="urls"></span></p>
+      <p>Shared - Select a fruit</p>
+      <select id="lists">
+      </select>
+      <p>Private - Select a vegetable</p>
+      <select id="vegetable">
+        <option value="broccoli">Broccoli</option>
+        <option value="corn">Corn</option>
+        <option value="kale">Kale</option>
+        <option value="onion">Onion</option>
+        <option value="spinach">Spinach</option>
+      </select>
+      <button id="save" class="mod-primary">Save</button>
     </div>
-    <script src="./js/section.js"></script>
-  </body>
+    <script src="./js/settings.js"></script>
+  </divh>
+</body>
+
 </html>
