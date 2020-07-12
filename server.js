@@ -18,7 +18,7 @@ app.use(cors());
 var trello_link = "https://trello.com";
 var output = [];
 
-const ngrok = 'https://2e996846ac5a.ngrok.io';
+const ngrok = 'https://57725fbea36e.ngrok.io';
 
 
 

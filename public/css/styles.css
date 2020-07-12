@@ -33,6 +33,10 @@
   footer > a {
     color: #BBBBBB;
   }
+
+  #content {
+    padding: 0 10px 10px 0;
+  }
   
   .nicejob {
     text-decoration: line-through;
