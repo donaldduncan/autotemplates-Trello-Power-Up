@@ -1,0 +1,26 @@
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+  <link rel="stylesheet" type="text/css" href="/css/styles.css">
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script>
+    const scriptSrc = window.customElements ? '/card.min.js' : '/card-polyfilled.min.js';
+    const cardJs = document.createElement('script');
+    cardJs.crossOrigin = 'anonymous';
+    cardJs.src = 'https://p.trellocdn.com' + scriptSrc;
+    document.head.appendChild(cardJs);
+  </script>
+</head>
+
+<body>
+  <div id="content">
+    <ul id="templatesList">
+      Loading template cards...
+    </ul>
+  </div>
+  <script src="./js/list-templates.js"></script>
+</body>
+
+</html>

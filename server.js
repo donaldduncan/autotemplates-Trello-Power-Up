@@ -18,7 +18,7 @@ app.use(cors());
 var trello_link = "https://trello.com";
 var output = [];
 
-const ngrok = 'https://57725fbea36e.ngrok.io';
+const ngrok = 'https://b66fbc5cba2c.ngrok.io';
 
 
 
@@ -52,15 +52,7 @@ function processWebhook(action) {
 }
 
 function processCardFromWebhook(data, actionType) {
-  let allCards = trello.getCardsOnBoard(data.board.id);
-
-  allCards.then((cards) => {
-    var templateCards = cards.filter(c => c.isTemplate).map(c => c.name);
-    console.log(templateCards);
-  })
-    .catch((error) => {
-      console.log('Oops, that didn\'t work!: ' + error);
-    })
+  getAllTemplates(data);
 
   //var templateCard = getTemplateForCard(card, templates);
   //trello.getCard(card.idBoard, card.id, result => {processCard(result, templateCard, actionType)});
@@ -179,6 +171,49 @@ app.get('*', restify.plugins.serveStatic({
   default: 'index.html'
 }));
 
+app.get('/isTemplate/:cardId', (req, res) => {
+  trello.makeRequest('get', `/1/cards/${req.params.cardId}/isTemplate`)
+    .then((isTemplate => {
+      res.send(isTemplate);
+    }))
+    .catch((err) => {
+      console.error('An error occurred:', err);
+      res.error(err);
+    })
+})
+
+app.get('/allTemplates/:boardId', (req, res) => {
+  getAllTemplates(req.params.boardId)
+    .then((allTemplates) => {
+      res.send(allTemplates)
+    })
+    .catch((err) => {
+      console.error('An error occurred:', err);
+      res.error(err);
+    })
+})
+
+app.put('/makeTemplate/:id', (req, res) => {
+  trello.updateCard(req.params.id, 'isTemplate', true)
+    .then(() => {
+      res.end();
+    })
+    .catch((err) => {
+      console.error('An error occurred:', err);
+      res.error(err);
+    })
+})
+
+app.get("/pluginData/:id", (req, res) => {
+  getPluginData(req.params.id)
+    .then((data) => {
+      res.send(data);
+    })
+    .catch((err) => {
+      console.log('Oops, that didn\'t work!: ', err);
+    })
+})
+
 // listen for requests :)
 app.listen(process.env.PORT, () => {
   console.info(`Node Version: ${process.version}`);
@@ -193,9 +228,34 @@ app.listen(process.env.PORT, () => {
         processWebhook(event.action)
       });
     })
-    .catch(e => {
-      console.log('Error getting Trello webhook');
-      console.log(e);
+    .catch(err => {
+      console.log('Error getting Trello webhook', err);
     });
 
 });;
+
+function getAllTemplates(boardId) {
+  return new Promise((resolve, reject) => {
+    trello.getCardsOnBoard(boardId)
+      .then((cards) => {
+        var templateCards = cards.filter(c => c.isTemplate);
+        resolve(templateCards);
+      })
+      .catch((error) => {
+        console.log('Oops, that didn\'t work!: ' + error);
+      })
+  })
+}
+
+function getPluginData(cardId) {
+  return new Promise((resolve, reject) => {
+    trello.makeRequest('get', `/1/cards/${cardId}/pluginData`)
+      .then((data) => {
+        var thisPlugin = data.filter(item => item.idPlugin === "5f05809aa235002f1d9ba1d8");
+        resolve(JSON.parse(thisPlugin[0].value));
+      })
+      .catch((err) => {
+        console.log('Oops, that didn\'t work!: ' + err);
+      })
+  })
+}
