@@ -33,7 +33,11 @@ function processWebhook(action) {
   if (actionTypes.includes(action.type)) {
     getAllTemplates(action.data.board.id)
       .then(templates => {
-        console.log(
+        templates.filter(template => template.pluginData.filter(pluginData =>  pluginData.idPlugin == '5b4765f383dd7c75d8e57be4')).map(item => console.log('item: ', item));//JSON.parse(item).templateLists.includes(action.data.list.id));
+        console.log(templates.filter(template => template.pluginData.filter(d => d.idPlugin == '5b4765f383dd7c75d8e57be4')));
+        //templates.filter(template => JSON.parse(template.pluginData.id)==)
+      })};
+        return;
           templates.filter(template => {
             template.pluginData.map(item => {
               console.log('item: ', item);
@@ -46,9 +50,9 @@ function processWebhook(action) {
               return (item.idPlugin === '5f05809aa235002f1d9ba1d8' && jsonValue.templateLists.includes(action.data.list.id));
             })
           })
-        )
-      })
-    }
+        //)
+      //})
+    //}
     //.then()}
     return;
   }
