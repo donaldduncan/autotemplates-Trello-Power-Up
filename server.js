@@ -17,10 +17,7 @@ app.use(cors());
 
 var trello_link = "https://trello.com";
 var output = [];
-
 const ngrok = 'https://b66fbc5cba2c.ngrok.io';
-
-
 
 const trelloWHServer = new TrelloWebhookServer({
   server: app,
@@ -31,9 +28,32 @@ const trelloWHServer = new TrelloWebhookServer({
 });
 
 function processWebhook(action) {
+  console.log(action);
+  const actionTypes = ["emailCard", "createCard", "updateCard", "copyCard", "moveCardToBoard", "convertToCardFromCheckItem", "moveListToBoard", "updateCard"];
+  if (actionTypes.includes(action.type)) {
+    getAllTemplates(action.data.board.id)
+      .then(templates => {
+        console.log(
+          templates.filter(template => {
+            template.pluginData.map(item => {
+              console.log('item: ', item);
+              return;
+              let jsonValue = JSON.parse(item.value);
+              console.log('idPlugin', item.idPlugin);
+              console.log('jsonValue', jsonValue.templateLists);
+              console.log('list id: ', action.data.list.id);
+              console.log(jsonValue.templateLists.includes(action.data.list.id));
+              return (item.idPlugin === '5f05809aa235002f1d9ba1d8' && jsonValue.templateLists.includes(action.data.list.id));
+            })
+          })
+        )
+      })
+    }
+    //.then()}
+    return;
+  }
 
-
-  //  We're only interested in actions relating to a card being created on the board.
+  /* //  We're only interested in actions relating to a card being created on the board.
   if (action.type == "emailCard" ||
     action.type == "createCard" ||
     action.type == "updateCard" ||
@@ -46,216 +66,216 @@ function processWebhook(action) {
       action.type = "updateCard:idList";
     }
     if (action.display.translationKey.includes('action_moved_card')) { return; }
+  
+    processCardFromWebhook(action); 
+  }*/
 
-    processCardFromWebhook(action.data, action.type);
+
+  function processCardFromWebhook(data, actionType) {
+    //getAllTemplates(data);
+
+    //var templateCard = getTemplateForCard(card, templates);
+    //trello.getCard(card.idBoard, card.id, result => {processCard(result, templateCard, actionType)});
+    //var checklistIds  = getChecklistIds(checklists);
+    //processCard(card,templateCard,actionType);
+
   }
-}
 
-function processCardFromWebhook(data, actionType) {
-  getAllTemplates(data);
-
-  //var templateCard = getTemplateForCard(card, templates);
-  //trello.getCard(card.idBoard, card.id, result => {processCard(result, templateCard, actionType)});
-  //var checklistIds  = getChecklistIds(checklists);
-  //processCard(card,templateCard,actionType);
-
-}
-
-/* function getTemplateForCard(card, templates) {
-
-  if (templates && templates.length == 0) {
-    return [];
-  }
-  else if (templates.length == 1 && templates[0].isForAllCards == true) {
-    return templates[0];
-  }
-  else {
-    var listName = getNameWithoutLimit(card.list.name);
-
-    for (var i = 0; i < templates.length; i++) {
-      if (card.list && templates[i].name.trim() === listName) {
-        return templates[i];
+  /* function getTemplateForCard(card, templates) {
+  
+    if (templates && templates.length == 0) {
+      return [];
+    }
+    else if (templates.length == 1 && templates[0].isForAllCards == true) {
+      return templates[0];
+    }
+    else {
+      var listName = getNameWithoutLimit(card.list.name);
+  
+      for (var i = 0; i < templates.length; i++) {
+        if (card.list && templates[i].name.trim() === listName) {
+          return templates[i];
+        }
       }
     }
-  }
+  
+    return [];
+  
+  } */
 
-  return [];
-
-} */
-
-/* function processCard(card, templateCard, actionType) {
-
-  // var addDescription = false;
-
-  // Don't process template card
-  if (card.id == templateCard.id || !templateCard.id || card.idList == process.env.idList) {
-    return;
-  }
-
-  // Use the description from the template if no current description:
-  if (card.desc.trim() == "" && templateCard.desc.trim() != "") {
-    addCardDescription(card, templateCard);
-  }
-
-  // If no current due date, calculate from template card:
-  if (templateCard.desc.indexOf("today+") !== -1) {
-    addDueDate(card, templateCard);
-  }
-
-  // Add any missing checklists/checklist items:
-  checkForMissingChecklists(card, templateCard)
-
-} */
-
-
-
-var createCardText = function (action) {
-  return (cardLink(action.data.card)) + " added by " + action.memberCreator.fullName;
-};
-
-var commentCardText = function (action) {
-  return "New comment on " + (cardLink(action.data.card)) + " by " + action.memberCreator.fullName + "\n" + action.data.text;
-};
-
-var updateCardText = function (action) {
-  if ("closed" in action.data.card) {
-    if (action.data.card.closed) {
-      return (cardLink(action.data.card)) + " archived by " + action.memberCreator.fullName;
-    } else {
-      return (cardLink(action.data.card)) + " un-archived by " + action.memberCreator.fullName;
+  /* function processCard(card, templateCard, actionType) {
+  
+    // var addDescription = false;
+  
+    // Don't process template card
+    if (card.id == templateCard.id || !templateCard.id || card.idList == process.env.idList) {
+      return;
     }
-  } else if ("listAfter" in action.data && "listBefore" in action.data) {
-    return (cardLink(action.data.card)) + " moved to " + action.data.listAfter.name + " by " + action.memberCreator.fullName;
-  } else if ('pos' in action.data.old) {
-    return (cardLink(action.data.card)) + " changed position, by " + action.memberCreator.fullName;
-  } else if ('isTemplate' in action.data.old) {
-    return (cardLink(action.data.card)) + " template status changed, by " + action.memberCreator.fullName;
-  } else {
-    return ("I don't know what to do with this:" + JSON.stringify(action));
-  }
-};
+  
+    // Use the description from the template if no current description:
+    if (card.desc.trim() == "" && templateCard.desc.trim() != "") {
+      addCardDescription(card, templateCard);
+    }
+  
+    // If no current due date, calculate from template card:
+    if (templateCard.desc.indexOf("today+") !== -1) {
+      addDueDate(card, templateCard);
+    }
+  
+    // Add any missing checklists/checklist items:
+    checkForMissingChecklists(card, templateCard)
+  
+  } */
 
-var cardLink = function (card) {
-  return `<a href='${trello_link}/c/${card.shortLink}' target='_new'>${card.name}</a>`;
-};
 
-var boardLink = function (board) {
-  return "<a href='" + trello_link + "/b/" + board.shortLink + "' target='_new'>" + board.name + "</a>";
-};
 
-var msgText = function (action) {
-  switch (action.type) {
-    case 'createCard':
-      return createCardText(action);
-    case 'commentCard':
-      return commentCardText(action);
-    case 'updateCard':
-      return updateCardText(action);
-    default:
-      return action.type + " not understood";
-  }
-};
+  var createCardText = function (action) {
+    return (cardLink(action.data.card)) + " added by " + action.memberCreator.fullName;
+  };
 
-app.head("/", function (req, res, next) {
-  res.end();
-  return next();
-});
+  var commentCardText = function (action) {
+    return "New comment on " + (cardLink(action.data.card)) + " by " + action.memberCreator.fullName + "\n" + action.data.text;
+  };
 
-app.get("/webhooks", function (req, res, next) {
-  res.send(output);
-  return next();
-});
+  var updateCardText = function (action) {
+    if ("closed" in action.data.card) {
+      if (action.data.card.closed) {
+        return (cardLink(action.data.card)) + " archived by " + action.memberCreator.fullName;
+      } else {
+        return (cardLink(action.data.card)) + " un-archived by " + action.memberCreator.fullName;
+      }
+    } else if ("listAfter" in action.data && "listBefore" in action.data) {
+      return (cardLink(action.data.card)) + " moved to " + action.data.listAfter.name + " by " + action.memberCreator.fullName;
+    } else if ('pos' in action.data.old) {
+      return (cardLink(action.data.card)) + " changed position, by " + action.memberCreator.fullName;
+    } else if ('isTemplate' in action.data.old) {
+      return (cardLink(action.data.card)) + " template status changed, by " + action.memberCreator.fullName;
+    } else {
+      return ("I don't know what to do with this:" + JSON.stringify(action));
+    }
+  };
 
-app.get('*', restify.plugins.serveStatic({
-  directory: __dirname + '/public',
-  default: 'index.html'
-}));
+  var cardLink = function (card) {
+    return `<a href='${trello_link}/c/${card.shortLink}' target='_new'>${card.name}</a>`;
+  };
 
-app.get('/isTemplate/:cardId', (req, res) => {
-  trello.makeRequest('get', `/1/cards/${req.params.cardId}/isTemplate`)
-    .then((isTemplate => {
-      res.send(isTemplate);
-    }))
-    .catch((err) => {
-      console.error('An error occurred:', err);
-      res.error(err);
-    })
-})
+  var boardLink = function (board) {
+    return "<a href='" + trello_link + "/b/" + board.shortLink + "' target='_new'>" + board.name + "</a>";
+  };
 
-app.get('/allTemplates/:boardId', (req, res) => {
-  getAllTemplates(req.params.boardId)
-    .then((allTemplates) => {
-      res.send(allTemplates)
-    })
-    .catch((err) => {
-      console.error('An error occurred:', err);
-      res.error(err);
-    })
-})
+  var msgText = function (action) {
+    switch (action.type) {
+      case 'createCard':
+        return createCardText(action);
+      case 'commentCard':
+        return commentCardText(action);
+      case 'updateCard':
+        return updateCardText(action);
+      default:
+        return action.type + " not understood";
+    }
+  };
 
-app.put('/makeTemplate/:id', (req, res) => {
-  trello.updateCard(req.params.id, 'isTemplate', true)
-    .then(() => {
-      res.end();
-    })
-    .catch((err) => {
-      console.error('An error occurred:', err);
-      res.error(err);
-    })
-})
+  app.head("/", function (req, res, next) {
+    res.end();
+    return next();
+  });
 
-app.get("/pluginData/:id", (req, res) => {
-  getPluginData(req.params.id)
-    .then((data) => {
-      res.send(data);
-    })
-    .catch((err) => {
-      console.log('Oops, that didn\'t work!: ', err);
-    })
-})
+  app.get("/webhooks", function (req, res, next) {
+    res.send(output);
+    return next();
+  });
 
-// listen for requests :)
-app.listen(process.env.PORT, () => {
-  console.info(`Node Version: ${process.version}`);
-  console.log('Trello Power-Up Server listening on port ' + app.address().port);
+  app.get('*', restify.plugins.serveStatic({
+    directory: __dirname + '/public',
+    default: 'index.html'
+  }));
 
-  trelloWHServer.start(process.env.MODEL_ID)
-    .then(webhookID => {
-      console.log(`Webhook ID: ${webhookID}`);
-      trelloWHServer.on('data', event => {
-        console.log(msgText(event.action));
-        output.push(msgText(event.action));
-        processWebhook(event.action)
-      });
-    })
-    .catch(err => {
-      console.log('Error getting Trello webhook', err);
-    });
-
-});;
-
-function getAllTemplates(boardId) {
-  return new Promise((resolve, reject) => {
-    trello.getCardsOnBoard(boardId)
-      .then((cards) => {
-        var templateCards = cards.filter(c => c.isTemplate);
-        resolve(templateCards);
-      })
-      .catch((error) => {
-        console.log('Oops, that didn\'t work!: ' + error);
+  app.get('/isTemplate/:cardId', (req, res) => {
+    trello.makeRequest('get', `/1/cards/${req.params.cardId}/isTemplate`)
+      .then((isTemplate => {
+        res.send(isTemplate);
+      }))
+      .catch((err) => {
+        console.error('An error occurred:', err);
+        res.error(err);
       })
   })
-}
 
-function getPluginData(cardId) {
-  return new Promise((resolve, reject) => {
-    trello.makeRequest('get', `/1/cards/${cardId}/pluginData`)
-      .then((data) => {
-        var thisPlugin = data.filter(item => item.idPlugin === "5f05809aa235002f1d9ba1d8");
-        resolve(JSON.parse(thisPlugin[0].value));
+  app.get('/allTemplates/:boardId', (req, res) => {
+    getAllTemplates(req.params.boardId)
+      .then((allTemplates) => {
+        res.send(allTemplates)
       })
       .catch((err) => {
-        console.log('Oops, that didn\'t work!: ' + err);
+        console.error('An error occurred:', err);
+        res.error(err);
       })
   })
-}
+
+  app.put('/makeTemplate/:id', (req, res) => {
+    trello.updateCard(req.params.id, 'isTemplate', true)
+      .then(() => {
+        res.end();
+      })
+      .catch((err) => {
+        console.error('An error occurred:', err);
+        res.error(err);
+      })
+  })
+
+  app.get("/pluginData/:id", (req, res) => {
+    getPluginData(req.params.id)
+      .then((data) => {
+        res.send(data);
+      })
+      .catch((err) => {
+        console.log('Oops, that didn\'t work!: ', err);
+      })
+  })
+
+  // listen for requests :)
+  app.listen(process.env.PORT, () => {
+    console.info(`Node Version: ${process.version}`);
+    console.log('Trello Power-Up Server listening on port ' + app.address().port);
+
+    trelloWHServer.start(process.env.MODEL_ID)
+      .then(webhookID => {
+        console.log(`Webhook ID: ${webhookID}`);
+        trelloWHServer.on('data', event => {
+          console.log(msgText(event.action));
+          output.push(msgText(event.action));
+          processWebhook(event.action)
+        });
+      })
+      .catch(err => {
+        console.log('Error getting Trello webhook', err);
+      });
+
+  });;
+
+  function getAllTemplates(boardId) {
+    return new Promise((resolve, reject) => {
+      trello.getCardsOnBoardWithExtraParams(boardId, { pluginData: true })
+        .then((cards) => {
+          var templateCards = cards.filter(c => c.isTemplate);
+          resolve(templateCards);
+        })
+        .catch((error) => {
+          console.log('Oops, that didn\'t work!: ' + error);
+        })
+    })
+  }
+
+  function getPluginData(cardId) {
+    return new Promise((resolve, reject) => {
+      trello.makeRequest('get', `/1/cards/${cardId}/pluginData`)
+        .then((data) => {
+          var thisPlugin = data.filter(item => item.idPlugin === "5f05809aa235002f1d9ba1d8");
+          resolve(JSON.parse(thisPlugin[0].value));
+        })
+        .catch((err) => {
+          console.log('Oops, that didn\'t work!: ' + err);
+        })
+    })
+  }
