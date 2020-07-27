@@ -18,6 +18,7 @@ app.use(cors());
 var trello_link = "https://trello.com";
 var output = [];
 const ngrok = 'https://b66fbc5cba2c.ngrok.io';
+const thisPluginId = '5f05809aa235002f1d9ba1d8';
 
 const trelloWHServer = new TrelloWebhookServer({
   server: app,
@@ -28,47 +29,34 @@ const trelloWHServer = new TrelloWebhookServer({
 });
 
 function processWebhook(action) {
-  console.log(action);
-  const actionTypes = ["emailCard", "createCard", "updateCard", "copyCard", "moveCardToBoard", "convertToCardFromCheckItem", "moveListToBoard", "updateCard"];
-  if (actionTypes.includes(action.type)) {
-    getAllTemplates(action.data.board.id)
-      .then(allTemplates => {
-        console.log("templates before: ", allTemplates);
-        var filteredTemplates = allTemplates.filter(template => {
-          var thisPluginData = template.pluginData.filter(pluginDataItem => {
-            console.log('pluginDataItem: ', pluginDataItem);
-            console.log("pluginDataItem.idPlugin == '5f05809aa235002f1d9ba1d8'", pluginDataItem.idPlugin == '5f05809aa235002f1d9ba1d8');
-            return pluginDataItem.idPlugin == '5f05809aa235002f1d9ba1d8';
-          });
-          console.log("thisPluginData: ", thisPluginData);
-          if (thisPluginData[0]) {
-            var parsed = JSON.parse(thisPluginData[0].value);
-            return parsed.templateLists.includes(action.data.list.id)
-          } else {
-            return false;
-          }
-        });
-        console.log("templates after: ", filteredTemplates);
-      })
-  };
-  return;
-  templates.filter(template => {
-    template.pluginData.map(item => {
-      console.log('item: ', item);
-      return;
-      let jsonValue = JSON.parse(item.value);
-      console.log('idPlugin', item.idPlugin);
-      console.log('jsonValue', jsonValue.templateLists);
-      console.log('list id: ', action.data.list.id);
-      console.log(jsonValue.templateLists.includes(action.data.list.id));
-      return (item.idPlugin === '5f05809aa235002f1d9ba1d8' && jsonValue.templateLists.includes(action.data.list.id));
+  const triggerActions = ["emailCard", "createCard", "updateCard", "copyCard", "moveCardToBoard", "convertToCardFromCheckItem", "moveListToBoard", "updateCard"];
+  if (!triggerActions.includes(action.type) || (action.type == "updateCard" && !action.data.listAfter)) return;
+
+  getCardAsync(action.data.card.id)
+    .then(triggerCard => {
+      return getAllTemplatesAsync(action.data.board.id).then(allTemplates => [allTemplates, triggerCard])
     })
-  })
-  //)
-  //})
-  //}
-  //.then()}
-  return;
+    .then(([allTemplates, triggerCard]) => {
+      console.log(allTemplates);
+
+      var triggeredTemplates = allTemplates.filter(template => {
+        var data = template.pluginData.filter(item => item.idPlugin == thisPluginId);
+        return data[0] ? JSON.parse(data[0].value).templateLists.includes(triggerCard.idList) : false;
+      });
+      return [triggeredTemplates, triggerCard];
+    })
+    .then(([templates, card]) => {
+      console.log(templates);
+      templates.map(template => {
+        trello.getChecklistsOnCard(template.id).then(checklists => {
+          console.log('here first', checklists);
+          checklists.filter(checklist => console.log('here'))
+        });
+      })
+    })
+    .catch(err => {
+      console.error(err);
+    })
 }
 
 /* //  We're only interested in actions relating to a card being created on the board.
@@ -221,7 +209,7 @@ app.get('/isTemplate/:cardId', (req, res) => {
 })
 
 app.get('/allTemplates/:boardId', (req, res) => {
-  getAllTemplates(req.params.boardId)
+  getAllTemplatesAsync(req.params.boardId)
     .then((allTemplates) => {
       res.send(allTemplates)
     })
@@ -243,7 +231,7 @@ app.put('/makeTemplate/:id', (req, res) => {
 })
 
 app.get("/pluginData/:id", (req, res) => {
-  getPluginData(req.params.id)
+  getPluginDataAsync(req.params.id)
     .then((data) => {
       res.send(data);
     })
@@ -272,7 +260,7 @@ app.listen(process.env.PORT, () => {
 
 });;
 
-function getAllTemplates(boardId) {
+let getAllTemplatesAsync = boardId => {
   return new Promise((resolve, reject) => {
     trello.getCardsOnBoardWithExtraParams(boardId, { pluginData: true })
       .then((cards) => {
@@ -285,15 +273,18 @@ function getAllTemplates(boardId) {
   })
 }
 
-function getPluginData(cardId) {
-  return new Promise((resolve, reject) => {
+let getCardAsync = cardId => trello.makeRequest('get', `/1/cards/${cardId}`);
+
+
+let getPluginDataAsync = cardId => {
+  return new Promise(resolve => {
     trello.makeRequest('get', `/1/cards/${cardId}/pluginData`)
       .then((data) => {
         var thisPlugin = data.filter(item => item.idPlugin === "5f05809aa235002f1d9ba1d8");
         resolve(JSON.parse(thisPlugin[0].value));
       })
       .catch((err) => {
-        console.log('Oops, that didn\'t work!: ' + err);
+        console.log(' ' + err);
       })
   })
 }
