@@ -2,7 +2,7 @@
 
 var Promise = TrelloPowerUp.Promise;
 
-var BLACK_ROCKET_ICON = 'https://cdn.glitch.com/1b42d7fe-bda8-4af8-a6c8-eff0cea9e08a%2Frocket-ship.png?1494946700421';
+var TEMPLATESPLUS_ICON = './css/templates+.svg';
 
 var boardButtonCallback = function (t) {
 	return t.board("id")
@@ -32,7 +32,7 @@ TrelloPowerUp.initialize({
 	// Start adding handlers for your capabilities here!
 	'board-buttons': function (t, options) {
 		return [{
-			icon: BLACK_ROCKET_ICON,
+			icon: TEMPLATESPLUS_ICON,
 			title: 'Template cards',
 			text: 'Templates+',
 			condition: 'always',
@@ -45,7 +45,7 @@ TrelloPowerUp.initialize({
 			.then(function () {
 				return {
 					title: 'Templates+',
-					icon: BLACK_ROCKET_ICON,
+					icon: TEMPLATESPLUS_ICON,
 					text: 'Template settings',
 					callback: cardButtonCallback /* {
 						type: 'iframe',

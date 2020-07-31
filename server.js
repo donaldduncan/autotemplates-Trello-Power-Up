@@ -38,87 +38,38 @@ function processWebhook(action) {
     })
     .then(([allTemplates, triggerCard]) => {
       console.log(allTemplates);
-
+      
       var triggeredTemplates = allTemplates.filter(template => {
         var data = template.pluginData.filter(item => item.idPlugin == thisPluginId);
         return data[0] ? JSON.parse(data[0].value).templateLists.includes(triggerCard.idList) : false;
       });
-      return [triggeredTemplates, triggerCard];
-    })
-    .then(([templates, card]) => {
-      console.log(templates);
-      templates.map(template => {
-        trello.getChecklistsOnCard(template.id).then(checklists => {
-          console.log('here first', checklists);
-          checklists.filter(checklist => console.log('here'))
-        });
-      })
+      
+      console.log(triggeredTemplates);
+      console.log(triggerCard);
+
+      processCard(triggerCard, triggeredTemplates, action.type)
+
+      //return [triggeredTemplates, triggerCard];
+    //})
+    //.then(([templates, card]) => {
+      //console.log(triggeredTemplates);
+      //triggeredTemplates.map(template => {
+        //template.checklists.length ? console.log("got one!", template.checklists[0].checkItems[0].name) : false;
+      //});
     })
     .catch(err => {
       console.error(err);
     })
 }
 
-/* //  We're only interested in actions relating to a card being created on the board.
-if (action.type == "emailCard" ||
-  action.type == "createCard" ||
-  action.type == "updateCard" ||
-  action.type == "copyCard" ||
-  action.type == "moveCardToBoard" ||
-  action.type == "convertToCardFromCheckItem" ||
-  action.type == "moveListToBoard") {
-  if (action.type == "updateCard" &&
-    action.data.listAfter) {
-    action.type = "updateCard:idList";
-  }
-  if (action.display.translationKey.includes('action_moved_card')) { return; }
- 
-  processCardFromWebhook(action); 
-}*/
-
-
-function processCardFromWebhook(data, actionType) {
-  //getAllTemplates(data);
-
-  //var templateCard = getTemplateForCard(card, templates);
-  //trello.getCard(card.idBoard, card.id, result => {processCard(result, templateCard, actionType)});
-  //var checklistIds  = getChecklistIds(checklists);
-  //processCard(card,templateCard,actionType);
-
-}
-
-/* function getTemplateForCard(card, templates) {
- 
-  if (templates && templates.length == 0) {
-    return [];
-  }
-  else if (templates.length == 1 && templates[0].isForAllCards == true) {
-    return templates[0];
-  }
-  else {
-    var listName = getNameWithoutLimit(card.list.name);
- 
-    for (var i = 0; i < templates.length; i++) {
-      if (card.list && templates[i].name.trim() === listName) {
-        return templates[i];
-      }
-    }
-  }
- 
-  return [];
- 
-} */
-
-/* function processCard(card, templateCard, actionType) {
+var processCard = (card, templateCards, actionType) => {
  
   // var addDescription = false;
  
-  // Don't process template card
-  if (card.id == templateCard.id || !templateCard.id || card.idList == process.env.idList) {
-    return;
-  }
+  // Don't process template cards
+  if (card.isTemplate) return;
  
-  // Use the description from the template if no current description:
+/* // Use the description from the template if no current description:
   if (card.desc.trim() == "" && templateCard.desc.trim() != "") {
     addCardDescription(card, templateCard);
   }
@@ -126,12 +77,12 @@ function processCardFromWebhook(data, actionType) {
   // If no current due date, calculate from template card:
   if (templateCard.desc.indexOf("today+") !== -1) {
     addDueDate(card, templateCard);
-  }
+  } */
  
   // Add any missing checklists/checklist items:
-  checkForMissingChecklists(card, templateCard)
+  checkForMissingChecklists(templateCards, card)
  
-} */
+}
 
 
 
@@ -260,23 +211,25 @@ app.listen(process.env.PORT, () => {
 
 });;
 
-let getAllTemplatesAsync = boardId => {
+var getAllTemplatesAsync = boardId => {
   return new Promise((resolve, reject) => {
-    trello.getCardsOnBoardWithExtraParams(boardId, { pluginData: true })
+    //trello.getCardsOnBoardWithExtraParams(boardId, { checklists: 'all', pluginData: true })
+    trello.makeRequest("get", `/1/boards/${boardId}/cards/all`, { checklists: 'all', pluginData: true })
       .then((cards) => {
+        console.log("all cards:", cards);
         var templateCards = cards.filter(c => c.isTemplate);
         resolve(templateCards);
       })
       .catch((error) => {
-        console.log('Oops, that didn\'t work!: ' + error);
+        console.log('Error getting templates!: ', error);
       })
   })
 }
 
-let getCardAsync = cardId => trello.makeRequest('get', `/1/cards/${cardId}`);
+var getCardAsync = cardId => trello.makeRequest('get', `/1/cards/${cardId}`, { checklists: 'all' });
 
 
-let getPluginDataAsync = cardId => {
+var getPluginDataAsync = cardId => {
   return new Promise(resolve => {
     trello.makeRequest('get', `/1/cards/${cardId}/pluginData`)
       .then((data) => {
@@ -287,4 +240,116 @@ let getPluginDataAsync = cardId => {
         console.log(' ' + err);
       })
   })
+}
+
+var checkForMissingChecklists = (templates, card) => {
+  for (var i = 0; i < templates.length; i++) {
+    for (var j = 0; j < templates[i].checklists.length; j++) {
+      var matchingChecklist = getMatchingCheckList(templates[i].checklists[j].name, card);
+      if (matchingChecklist == null) {
+        copyChecklist(card, templates[i].checklists[j].id, templates[i].checklists[j].name);
+      }
+      else {
+        syncChecklistItems(card, templates[i].checklists[j], matchingChecklist);
+      }
+    }
+  }
+}
+
+var getMatchingCheckList = (name, card) => {
+  
+  var index = 0;
+  for (var i=0; i < card.checklists.length; i++) {
+    
+    if (card.checklists[i].name == name) {
+       return card.checklists[i];
+    }  
+  }
+  
+  return null;
+  
+}
+
+var copyChecklist = (card, fromChecklistId, fromCheckListName) => {
+
+  trello.addExistingChecklistToCard(card.id, fromChecklistId)
+  .catch(err => console.log(err));
+  
+}
+
+function syncChecklistItems(card, templateChecklist, matchingChecklist) {
+  
+  for (var i = 0; i < templateChecklist.checkItems.length; i++) {
+    
+    var checkItemFound = false;
+    
+    for (var j = 0; (j < matchingChecklist.checkItems.length && !checkItemFound); j++) {
+      if (matchingChecklist.checkItems[j].name == templateChecklist.checkItems[i].name) {
+        checkItemFound = true;
+        if (templateChecklist.checkItems[i].state == "complete") {
+          deleteChecklistItem(matchingChecklist.id, matchingChecklist.checkItems[j].id);
+        }
+      }
+    }
+    
+    if (templateChecklist.checkItems[i].state == "incomplete" && !checkItemFound) {
+      addChecklistItem(matchingChecklist.id,templateChecklist.checkItems[i].name);
+    }
+    
+  }
+  
+}
+
+var addChecklistItem = (checklistId, name) => {
+
+  trello.addItemToChecklist(checklistId, name)
+  .catch(err => console.log(err));
+  
+}
+
+var deleteChecklistItem = (checklistId, checklistItemId) => {
+
+  trello.makeRequest('delete', `/1/checklists/${checklistId}/checkItems${checklistItemId}`)
+  .catch(err => console.log(err));
+  
+}
+
+var addCardDescription = (card, templateCard) => {
+  
+  var description = templateCard.desc.replace(/(\+\d+(\s?)+(weeks|w))|((today\+)\d+)/g, "").trim()
+   
+  var url = constructTrelloURL("cards/" + card.id + "?desc=" + encodeURIComponent(description));
+  var resp = UrlFetchApp.fetch(url, {"method": "put"});
+  
+}
+
+var addDueDate = (card, templateCard) => {
+  if (card.due) {
+    var duePrevious = new Date(card.due);//.toLocaleDateString();
+    duePrevious.setDate(duePrevious.getDate() - 1);
+    duePrevious = duePrevious.toLocaleDateString();
+    
+    var description;
+    card.desc ? description = card.desc + "\n\n" : description = "";
+    description += "Previously due: " + duePrevious;
+    
+    var url = constructTrelloURL("cards/" + card.id + "?desc=" + encodeURIComponent(description));
+    var resp = UrlFetchApp.fetch(url, {"method": "put"});
+  }
+  
+  var date = new Date();
+  var weeksAdded = templateCard.desc.substr(templateCard.desc.indexOf("today+")+6,2)
+  
+  date.setDate(date.getDate() + (7 * parseInt(weeksAdded)));
+  
+  var url = constructTrelloURL("cards/" + card.id + "?due=" + encodeURIComponent(date.toISOString()));
+  var resp = UrlFetchApp.fetch(url, {"method": "put"});
+  Logger.log("Add due date");
+}
+
+var updateCardName = (card, newCardName) => {
+  
+  var url = constructTrelloURL("card/" + card.id + "/name?value=" + encodeURIComponent(newCardName));
+  var resp = UrlFetchApp.fetch(url, {"method": "put"});
+  Logger.log("Updated card name");
 }
