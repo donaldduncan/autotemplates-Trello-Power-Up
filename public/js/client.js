@@ -20,7 +20,14 @@ var boardButtonCallback = function (t) {
 }
 
 var cardButtonCallback = t => {
-	console.log("here", t);
+	if (!token) {
+		console.log('no token!')
+		context.popup({
+			title: 'Authorize Your Account',
+			url: './auth.html',
+			height: 75
+		});
+	} else {
 	return t.popup({
 		title: 'Template+ settings',
 		url: t.signUrl('./settings.html'),
@@ -40,22 +47,27 @@ TrelloPowerUp.initialize({
 		}]
 	},
 	'card-buttons': function (t, options) {
+		// check that viewing member has write permissions on this board
+
+		if (options.context.permissions.board !== 'write') {
+			return [];
+		}
 		return t
-			.set("member", "shared", "hello", "world")
-			.then(function () {
-				return {
+			.get('member', 'private', 'token')
+			.then(function (token) {
+				return [{
 					title: 'Templates+',
 					icon: TEMPLATESPLUS_ICON,
 					text: 'Template settings',
-					callback: cardButtonCallback /* {
-						type: 'iframe',
-						url: t.signUrl('./section.html'),
-						height: 230
-					} */
-				};
+//					callback: function (context) { 						
+					callback: cardButtonCallback
+							//cardButtonCallback
+						//}
+					//}
+				}];
 			})
 			.catch(function (err) {
-				console.error("We have a problem:", err);
+				console.error("We have a problem with card-buttons:", err);
 			});
 	}
 }, {

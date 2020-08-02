@@ -1,6 +1,5 @@
 /* global TrelloPowerUp */
 
-//const axios = require('axios');
 var Promise = TrelloPowerUp.Promise;
 var t = TrelloPowerUp.iframe();
 
@@ -9,8 +8,6 @@ var isTemplateContent = document.getElementById('content-isTemplate');
 var notTemplateContent = document.getElementById('content-notTemplate');
 var makeTemplateBtn = document.getElementById('refresh');
 var listsSelected = [];
-var backendUrl = 'https://57725fbea36e.ngrok.io/';
-var trelloUrl = 'https://api.trello.com/1/'
 
 isTemplateContent.style.display = 'none';
 notTemplateContent.style.display = 'none';
@@ -21,17 +18,19 @@ t.render(function () {
     t.lists('id', 'name'),
     t.card('id')
   ])
-    .then(allData => {
-      return axios.get('/isTemplate/' + allData[2].id)
+    .then(resolvedPromises => {
+      return axios.get('/isTemplate/' + resolvedPromises[2].id)
         .then(res => {
-          allData.push(res.data._value);
-          return allData;
+          resolvedPromises.push(res.data._value);
+          return resolvedPromises;
         })
     })
-
     .spread(function (savedLists, allLists, card, isTemplate) {
       console.log('got here!');
-      isTemplate ? isTemplateContent.style.display = 'block' : notTemplateContent.style.display = 'block';
+      var content = isTemplate 
+                        ? isTemplateContent
+                        : notTemplateContent;      
+      content.style.display = 'block';
 
       templatesList.innerHTML = "";
       allLists.map((list, i) => {
@@ -86,5 +85,6 @@ makeTemplateBtn.addEventListener('click', () => {
       .then(() => {
         t.closePopup();
       })
+      .catch(err => console.error(err))
   }
 })

@@ -17,7 +17,7 @@ app.use(cors());
 
 var trello_link = "https://trello.com";
 var output = [];
-const ngrok = 'https://b66fbc5cba2c.ngrok.io';
+const ngrok = 'https://1955c850b2eb.ngrok.io';
 const thisPluginId = '5f05809aa235002f1d9ba1d8';
 
 const trelloWHServer = new TrelloWebhookServer({
@@ -66,7 +66,6 @@ var processCard = (card, templateCards, actionType) => {
  
   // var addDescription = false;
  
-  // Don't process template cards
   if (card.isTemplate) return;
  
 /* // Use the description from the template if no current description:
@@ -84,54 +83,7 @@ var processCard = (card, templateCards, actionType) => {
  
 }
 
-
-
-var createCardText = function (action) {
-  return (cardLink(action.data.card)) + " added by " + action.memberCreator.fullName;
-};
-
-var commentCardText = function (action) {
-  return "New comment on " + (cardLink(action.data.card)) + " by " + action.memberCreator.fullName + "\n" + action.data.text;
-};
-
-var updateCardText = function (action) {
-  if ("closed" in action.data.card) {
-    if (action.data.card.closed) {
-      return (cardLink(action.data.card)) + " archived by " + action.memberCreator.fullName;
-    } else {
-      return (cardLink(action.data.card)) + " un-archived by " + action.memberCreator.fullName;
-    }
-  } else if ("listAfter" in action.data && "listBefore" in action.data) {
-    return (cardLink(action.data.card)) + " moved to " + action.data.listAfter.name + " by " + action.memberCreator.fullName;
-  } else if ('pos' in action.data.old) {
-    return (cardLink(action.data.card)) + " changed position, by " + action.memberCreator.fullName;
-  } else if ('isTemplate' in action.data.old) {
-    return (cardLink(action.data.card)) + " template status changed, by " + action.memberCreator.fullName;
-  } else {
-    return ("I don't know what to do with this:" + JSON.stringify(action));
-  }
-};
-
-var cardLink = function (card) {
-  return `<a href='${trello_link}/c/${card.shortLink}' target='_new'>${card.name}</a>`;
-};
-
-var boardLink = function (board) {
-  return "<a href='" + trello_link + "/b/" + board.shortLink + "' target='_new'>" + board.name + "</a>";
-};
-
-var msgText = function (action) {
-  switch (action.type) {
-    case 'createCard':
-      return createCardText(action);
-    case 'commentCard':
-      return commentCardText(action);
-    case 'updateCard':
-      return updateCardText(action);
-    default:
-      return action.type + " not understood";
-  }
-};
+// Controller routes
 
 app.head("/", function (req, res, next) {
   res.end();
@@ -211,9 +163,10 @@ app.listen(process.env.PORT, () => {
 
 });;
 
+
+
 var getAllTemplatesAsync = boardId => {
   return new Promise((resolve, reject) => {
-    //trello.getCardsOnBoardWithExtraParams(boardId, { checklists: 'all', pluginData: true })
     trello.makeRequest("get", `/1/boards/${boardId}/cards/all`, { checklists: 'all', pluginData: true })
       .then((cards) => {
         console.log("all cards:", cards);
@@ -317,9 +270,8 @@ var deleteChecklistItem = (checklistId, checklistItemId) => {
 var addCardDescription = (card, templateCard) => {
   
   var description = templateCard.desc.replace(/(\+\d+(\s?)+(weeks|w))|((today\+)\d+)/g, "").trim()
-   
-  var url = constructTrelloURL("cards/" + card.id + "?desc=" + encodeURIComponent(description));
-  var resp = UrlFetchApp.fetch(url, {"method": "put"});
+  
+  trello.updateCardDescription(card.id, encodeURIComponent(description));
   
 }
 
@@ -351,5 +303,56 @@ var updateCardName = (card, newCardName) => {
   
   var url = constructTrelloURL("card/" + card.id + "/name?value=" + encodeURIComponent(newCardName));
   var resp = UrlFetchApp.fetch(url, {"method": "put"});
-  Logger.log("Updated card name");
 }
+
+
+
+
+
+// Log webhook functions
+var createCardText = function (action) {
+  return (cardLink(action.data.card)) + " added by " + action.memberCreator.fullName;
+};
+
+var commentCardText = function (action) {
+  return "New comment on " + (cardLink(action.data.card)) + " by " + action.memberCreator.fullName + "\n" + action.data.text;
+};
+
+var updateCardText = function (action) {
+  if ("closed" in action.data.card) {
+    if (action.data.card.closed) {
+      return (cardLink(action.data.card)) + " archived by " + action.memberCreator.fullName;
+    } else {
+      return (cardLink(action.data.card)) + " un-archived by " + action.memberCreator.fullName;
+    }
+  } else if ("listAfter" in action.data && "listBefore" in action.data) {
+    return (cardLink(action.data.card)) + " moved to " + action.data.listAfter.name + " by " + action.memberCreator.fullName;
+  } else if ('pos' in action.data.old) {
+    return (cardLink(action.data.card)) + " changed position, by " + action.memberCreator.fullName;
+  } else if ('isTemplate' in action.data.old) {
+    return (cardLink(action.data.card)) + " template status changed, by " + action.memberCreator.fullName;
+  } else {
+    return ("I don't know what to do with this:" + JSON.stringify(action));
+  }
+};
+
+var cardLink = function (card) {
+  return `<a href='${trello_link}/c/${card.shortLink}' target='_new'>${card.name}</a>`;
+};
+
+var boardLink = function (board) {
+  return "<a href='" + trello_link + "/b/" + board.shortLink + "' target='_new'>" + board.name + "</a>";
+};
+
+var msgText = function (action) {
+  switch (action.type) {
+    case 'createCard':
+      return createCardText(action);
+    case 'commentCard':
+      return commentCardText(action);
+    case 'updateCard':
+      return updateCardText(action);
+    default:
+      return action.type + " not understood";
+  }
+};
