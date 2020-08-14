@@ -10,10 +10,11 @@ var trelloUrl = 'https://api.trello.com/1/'
 
 t.render(function () {
   return Promise.all([
-    t.board('id')
+    t.board('id'),
+    t.args(token)
   ])
     .then(board => {
-      return axios.get('/allTemplates/' + board[0].id)
+      return axios.get('/allTemplates/' + board[0].id, {token: token})
     })
     .then(function (allTemplates) {
       templatesList.innerHTML = "";

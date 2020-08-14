@@ -10,7 +10,7 @@ var boardButtonCallback = function (t) {
 			console.log('Processing board buttons!', t, boardId);
 			return t.popup({
 				title: 'Template cards',
-				url: t.signUrl('./list-templates.html'),
+				url: './list-templates.html',
 				height: 50
 			})
 		})
@@ -19,7 +19,8 @@ var boardButtonCallback = function (t) {
 		})
 }
 
-var cardButtonCallback = t => {
+var cardButtonCallback = ([t, token]) => {
+	console.log("t: ", t, token, t.getContext());
 	if (!token) {
 		console.log('no token!')
 		context.popup({
@@ -28,43 +29,87 @@ var cardButtonCallback = t => {
 			height: 75
 		});
 	} else {
-	return t.popup({
-		title: 'Template+ settings',
-		url: t.signUrl('./settings.html'),
-		height: 60
-	})
+		return t.popup({
+			title: 'Template+ settings',
+			url: './settings.html',
+			height: 60
+		})
+	}
 }
 
 TrelloPowerUp.initialize({
 	// Start adding handlers for your capabilities here!
 	'board-buttons': function (t, options) {
-		return [{
-			icon: TEMPLATESPLUS_ICON,
-			title: 'Template cards',
-			text: 'Templates+',
-			condition: 'always',
-			callback: boardButtonCallback
-		}]
-	},
-	'card-buttons': function (t, options) {
-		// check that viewing member has write permissions on this board
-
 		if (options.context.permissions.board !== 'write') {
 			return [];
 		}
 		return t
-			.get('member', 'private', 'token')
+			.get('organization', 'private', 'token')
 			.then(function (token) {
-				return [{
+				return {
+					icon: TEMPLATESPLUS_ICON,
+					title: 'Template cards',
+					text: 'Templates+',
+					condition: 'always',
+					callback: (t) => {
+						if (token) {
+							console.log('no token!')
+							t.popup({
+								title: 'Authorize Your Account',
+								url: './auth.html',
+								height: 75
+							});
+						} else {
+							return t.board("id")
+								.then(boardId => {
+									console.log('Processing board buttons!', t, boardId);
+									return t.popup({
+										title: 'Template cards',
+										url: t.signUrl('./list-templates.html', token),
+										height: 50
+									})
+								})
+								.catch(function (err) {
+									console.error('Error: ', error);
+								})
+						}
+					}
+				}
+			})
+	},
+	'card-buttons': function (t, options) {
+		console.log('options: ', options);
+		// check that viewing member has write permissions on this board
+		if (options.context.permissions.board !== 'write') {
+			return [];
+		}
+		return t
+			.get('organization', 'private', 'token')
+			.then(function (token) {
+				console.log('token: ', token);
+				return {
 					title: 'Templates+',
 					icon: TEMPLATESPLUS_ICON,
 					text: 'Template settings',
-//					callback: function (context) { 						
-					callback: cardButtonCallback
-							//cardButtonCallback
-						//}
-					//}
-				}];
+					//callback: cardButtonCallback([t, token]),
+					callback: (t) => {
+						console.log("t: ", t, token, t.getContext());
+						if (token) {
+							console.log('no token!')
+							t.popup({
+								title: 'Authorize Your Account',
+								url: './auth.html',
+								height: 75
+							});
+						} else {
+							return t.popup({
+								title: 'Template+ settings',
+								url: './settings.html',
+								height: 60
+							})
+						}
+					},
+				};
 			})
 			.catch(function (err) {
 				console.error("We have a problem with card-buttons:", err);

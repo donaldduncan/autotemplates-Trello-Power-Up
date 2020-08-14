@@ -1,15 +1,24 @@
 var Promise = TrelloPowerUp.Promise;
 var t = TrelloPowerUp.iframe();
-var trelloAuthUrl = `https://trello.com/1/authorize?expiration=never&name=Templates+&scope=read&key=ac13950b00cd7aef069ad1b211ccb850&callback_method=fragment&return_url=${window.location.origin}%2Fauth-success.html`;
+var trelloAuthUrl = `https://trello.com/1/authorize?expiration=never&name=Templates+&scope=read,write&key=ac13950b00cd7aef069ad1b211ccb850&callback_method=fragment&return_url=${window.location.origin}%2Fauth-success.html`;
 var tokenLooksValid = function (token) {
     // If this returns false, the Promise won't resolve.
     return /^[0-9a-f]{64}$/.test(token);
 }
 
+t.sizeTo('body');
+
 document.getElementById('auth-btn').addEventListener('click', function () {
     t.authorize(trelloAuthUrl, { height: 680, width: 580, validToken: tokenLooksValid })
         .then(function (token) {
             // store the token in Trello private Power-Up storage
+            console.log('Got your token!!!: ', token);
+            axios.post('/setupWebhook/', {
+                token: token,
+              })
+              .then(function (response) {
+                console.log(response);
+              })
             return t.set('organization', 'private', 'token', token)
                 .catch(t.NotHandled, function () {
                     // sometimes that may not work
@@ -26,7 +35,7 @@ document.getElementById('auth-btn').addEventListener('click', function () {
 });
 
 
-window.Promise = TrelloPowerUp.Promise;
+/* window.Promise = TrelloPowerUp.Promise;
 var t = TrelloPowerUp.iframe();
 
 var trelloAuthUrl = 'https://trello.com/1/authorize?';
@@ -60,4 +69,4 @@ document.getElementById('auth-btn').addEventListener('click', function () {
             // now that we have the token, let the user continue
             return t.closePopup();
         });
-});
+}); */
