@@ -65,7 +65,7 @@ TrelloPowerUp.initialize({
 									console.log('Processing board buttons!', t, boardId);
 									return t.popup({
 										title: 'Template cards',
-										url: t.signUrl('./list-templates.html', token),
+										url: './list-templates.html',
 										height: 50
 									})
 								})
