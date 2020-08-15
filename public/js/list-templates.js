@@ -11,9 +11,9 @@ var trelloUrl = 'https://api.trello.com/1/'
 t.render(function () {
   return Promise.all([
     t.board('id'),
-    t.args(token)
+     .get('organization', 'private', 'token')
   ])
-    .then(board => {
+    .spread((board, token) => {
       return axios.get('/allTemplates/' + board[0].id, {token: token})
     })
     .then(function (allTemplates) {
