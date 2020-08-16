@@ -128,7 +128,7 @@ app.get('*', restify.plugins.serveStatic({
 }));
 
 app.get('/isTemplate/:cardId', (req, res) => {
-  trello.makeRequest('get', `/1/cards/${req.params.cardId}/isTemplate`)
+  trello[req.body.token].makeRequest('get', `/1/cards/${req.params.cardId}/isTemplate`)
     .then((isTemplate => {
       res.send(isTemplate);
     }))
@@ -161,7 +161,7 @@ app.put('/makeTemplate/:id', (req, res) => {
 })
 
 app.get("/pluginData/:id", (req, res) => {
-  getPluginDataAsync(req.params.id)
+  getPluginDataAsync(req.params.id, req.body.token)
     .then((data) => {
       res.send(data);
     })
@@ -202,12 +202,12 @@ var getAllTemplatesAsync = (boardId, token) => {
   })
 }
 
-var getCardAsync = cardId => trello.makeRequest('get', `/1/cards/${cardId}`, { checklists: 'all' });
+var getCardAsync = (cardId, token) => trello[token].makeRequest('get', `/1/cards/${cardId}`, { checklists: 'all' });
 
 
-var getPluginDataAsync = cardId => {
+var getPluginDataAsync = (cardId, token) => {
   return new Promise(resolve => {
-    trello.makeRequest('get', `/1/cards/${cardId}/pluginData`)
+    trello[token].makeRequest('get', `/1/cards/${cardId}/pluginData`)
       .then((data) => {
         var thisPlugin = data.filter(item => item.idPlugin === "5f05809aa235002f1d9ba1d8");
         resolve(JSON.parse(thisPlugin[0].value));
