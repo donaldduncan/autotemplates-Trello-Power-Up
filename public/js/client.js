@@ -52,7 +52,7 @@ TrelloPowerUp.initialize({
 					text: 'Templates+',
 					condition: 'always',
 					callback: (t) => {
-						if (token) {
+						if (!token) {
 							console.log('no token!')
 							t.popup({
 								title: 'Authorize Your Account',

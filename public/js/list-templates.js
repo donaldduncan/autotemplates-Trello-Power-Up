@@ -1,6 +1,5 @@
 /* global TrelloPowerUp */
 
-//const axios = require('axios');
 var Promise = TrelloPowerUp.Promise;
 var t = TrelloPowerUp.iframe();
 
@@ -11,10 +10,12 @@ var trelloUrl = 'https://api.trello.com/1/'
 t.render(function () {
   return Promise.all([
     t.board('id'),
-     .get('organization', 'private', 'token')
+    t.get('member', 'private', 'token')
+    //t.getAll()
   ])
     .spread((board, token) => {
-      return axios.get('/allTemplates/' + board[0].id, {token: token})
+      console.log({board}, {token})
+      return axios.post('/allTemplates/' + board.id, {'token': token})
     })
     .then(function (allTemplates) {
       templatesList.innerHTML = "";

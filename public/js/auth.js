@@ -9,23 +9,26 @@ var tokenLooksValid = function (token) {
 t.sizeTo('body');
 
 document.getElementById('auth-btn').addEventListener('click', function () {
-    t.authorize(trelloAuthUrl, { height: 680, width: 580, validToken: tokenLooksValid })
-        .then(function (token) {
+    return Promise.all([
+        t.authorize(trelloAuthUrl, { height: 680, width: 580, validToken: tokenLooksValid }),
+        t.board('id')
+    ])
+        .then(function (all) {
             // store the token in Trello private Power-Up storage
-            console.log('Got your token!!!: ', token);
-            axios.post('/setupWebhook/', {
-                token: token,
+            console.log('Got your token!!!: ', all[0]);
+            axios.post(`/setupWebhook/${all[1].id}`, {
+                'token': all[0],
               })
               .then(function (response) {
                 console.log(response);
               })
-            return t.set('organization', 'private', 'token', token)
+            return t.set('member', 'private', 'token', all[0])
                 .catch(t.NotHandled, function () {
                     // sometimes that may not work
                     // the best example is if this member is a member of the board
                     // but not a member of the team
                     // in that case we fall back to storing it at the board
-                    return t.set('board', 'private', 'token', token);
+                    return t.set('board', 'private', 'token', all[0].token);
                 })
         })
         .then(function () {

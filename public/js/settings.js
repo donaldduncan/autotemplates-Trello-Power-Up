@@ -16,10 +16,11 @@ t.render(function () {
   return Promise.all([
     t.get('card', 'shared', 'templateLists'),
     t.lists('id', 'name'),
-    t.card('id')
+    t.card('id'),
+    t.get('organization', 'private', 'token')
   ])
     .then(resolvedPromises => {
-      return axios.get('/isTemplate/' + resolvedPromises[2].id)
+      return axios.get('/isTemplate/' + resolvedPromises[2].id, { token: resolvedPromises[3].token })
         .then(res => {
           resolvedPromises.push(res.data._value);
           return resolvedPromises;
@@ -27,9 +28,9 @@ t.render(function () {
     })
     .spread(function (savedLists, allLists, card, isTemplate) {
       console.log('got here!');
-      var content = isTemplate 
-                        ? isTemplateContent
-                        : notTemplateContent;      
+      var content = isTemplate
+        ? isTemplateContent
+        : notTemplateContent;
       content.style.display = 'block';
 
       templatesList.innerHTML = "";
@@ -72,10 +73,13 @@ document.getElementById('update').addEventListener('click', function () {
 
 makeTemplateBtn.addEventListener('click', () => {
   if (t.memberCanWriteToModel('card')) {
-    t.card('id')
-      .then(card => {
-        console.log('Card: ', card);
-        axios.put('/makeTemplate/' + card.id);
+    return Promise.all([
+      t.card('id'),
+      t.get('organization', 'private', 'token')
+    ])
+      .then(all => {
+        console.log(all[0].id);
+        axios.put('/makeTemplate/' + all[0].id, { token: all[1].token });
       })
       .then(() => {
         t.alert({

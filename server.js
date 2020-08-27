@@ -17,51 +17,43 @@ app.use(cors());
 
 var trello_link = "https://trello.com";
 var output = [];
-const ngrok = 'https://1955c850b2eb.ngrok.io';
+const ngrok = 'https://5e697f061fdd.ngrok.io';
 const thisPluginId = '5f05809aa235002f1d9ba1d8';
 
 const trelloApiWorkers = {};
-const WHServers = {};
+//var WHServer = {};
 
 function createTrelloApiWorker(token) {
 }
 
-function createWHServer(token) {
-  
-  trello[token] = new Trello(process.env.TRELLO_API_KEY, token)
-  WHServers[token] = new TrelloWebhookServer({
+//function createWHServer(token, boardID) {
+
+  //trello[token] = new Trello(process.env.TRELLO_API_KEY, token)
+  //WHServer[token] = new TrelloWebhookServer({
+  const WHServer = new TrelloWebhookServer({
     server: app,
     hostURL: ngrok + '/webhooks/trello',  //'https://' + process.env.PROJECT_DOMAIN + '.glitch.me/webhooks/trello',
     apiKey: process.env.TRELLO_API_KEY,
-    apiToken: token,
+    //apiToken: token,
+    apiToken: process.env.TRELLO_API_TOKEN,
     clientSecret: process.env.SECRET
   });
 
-  WHServers[token].start(process.env.MODEL_ID)
-  .then(webhookID => {
-    console.log(`Webhook ID: ${webhookID}`);
-    WHServers[token].on('data', event => {
-      console.log(msgText(event.action));
-      output.push(msgText(event.action));
-      processWebhook(event.action)
-    });
-  })
-  .catch(err => {
-    console.log('Error getting Trello webhook', err);
-  });
-
-}
-
-createWHServer(process.env.TRELLO_API_TOKEN);
 
 
-function processWebhook(action) {
+
+//}
+
+
+
+function processWebhook(action, modelID, token) {
+
   const triggerActions = ["emailCard", "createCard", "updateCard", "copyCard", "moveCardToBoard", "convertToCardFromCheckItem", "moveListToBoard", "updateCard"];
   if (!triggerActions.includes(action.type) || (action.type == "updateCard" && !action.data.listAfter)) return;
 
-  getCardAsync(action.data.card.id)
+  getCardAsync(action.data.card.id, token)
     .then(triggerCard => {
-      return getAllTemplatesAsync(action.data.board.id).then(allTemplates => [allTemplates, triggerCard])
+      return getAllTemplatesAsync(action.data.board.id, token).then(allTemplates => [allTemplates, triggerCard])
     })
     .then(([allTemplates, triggerCard]) => {
       console.log(allTemplates);
@@ -71,10 +63,10 @@ function processWebhook(action) {
         return data[0] ? JSON.parse(data[0].value).templateLists.includes(triggerCard.idList) : false;
       });
 
-      console.log(triggeredTemplates);
-      console.log(triggerCard);
+      console.log({triggeredTemplates});
+      console.log({triggerCard});
 
-      processCard(triggerCard, triggeredTemplates, action.type)
+      processCard(triggerCard, triggeredTemplates, action.type, token)
 
       //return [triggeredTemplates, triggerCard];
       //})
@@ -89,7 +81,7 @@ function processWebhook(action) {
     })
 }
 
-var processCard = (card, templateCards, actionType) => {
+var processCard = (card, templateCards, actionType, token) => {
 
   // var addDescription = false;
 
@@ -106,11 +98,13 @@ var processCard = (card, templateCards, actionType) => {
     } */
 
   // Add any missing checklists/checklist items:
-  checkForMissingChecklists(templateCards, card)
+  checkForMissingChecklists(templateCards, card, token)
 
 }
 
 // Controller routes
+
+app.use(restify.plugins.bodyParser({ mapParams: true }));
 
 app.head("/", function (req, res, next) {
   res.end();
@@ -138,7 +132,8 @@ app.get('/isTemplate/:cardId', (req, res) => {
     })
 })
 
-app.get('/allTemplates/:boardId', (req, res) => {
+app.post('/allTemplates/:boardId', (req, res) => {
+  console.log(req.body.token);
   getAllTemplatesAsync(req.params.boardId, req.body.token)
     .then((allTemplates) => {
       res.send(allTemplates)
@@ -150,7 +145,7 @@ app.get('/allTemplates/:boardId', (req, res) => {
 })
 
 app.put('/makeTemplate/:id', (req, res) => {
-  trello.updateCard(req.params.id, 'isTemplate', true)
+  trello[req.body.token].updateCard(req.params.id, 'isTemplate', true)
     .then(() => {
       res.end();
     })
@@ -170,9 +165,10 @@ app.get("/pluginData/:id", (req, res) => {
     })
 })
 
-app.use(restify.plugins.bodyParser({ mapParams: true }));
-app.post("/setupWebhook/", ((req, res) => {
-  console.log(req);
+app.post("/setupWebhook/:boardID", ((req, res) => {
+  console.log(JSON.stringify(req.body));
+  createWHServer(req.body.token, req.params.boardID);
+  console.log({WHServer});
   res.json(req.body);
 })
 )
@@ -182,7 +178,22 @@ app.listen(process.env.PORT, () => {
   console.info(`Node Version: ${process.version}`);
   console.log('Trello Power-Up Server listening on port ' + app.address().port);
 
-
+  //WHServer[token].start(boardID)
+  WHServer.start(process.env.MODEL_ID)
+    .then(webhookID => {
+      console.log('Webhook server started; webhook: ', webhookID/* WHServer[token] */);
+      WHServer.on('data', event => {
+      //WHServer[token].on('data', event => {
+        nonsense;
+        console.log(msgText(event.action));
+        output.push(msgText(event.action));
+        //processWebhook(event.action, event.model.id, token)
+        processWebhook(event.action, event.model.id, process.env.TRELLO_API_TOKEN);
+      });
+    })
+    .catch(err => {
+      console.log('Error getting Trello webhook', err);
+    });
 
 });;
 
@@ -218,15 +229,15 @@ var getPluginDataAsync = (cardId, token) => {
   })
 }
 
-var checkForMissingChecklists = (templates, card) => {
+var checkForMissingChecklists = (templates, card, token) => {
   for (var i = 0; i < templates.length; i++) {
     for (var j = 0; j < templates[i].checklists.length; j++) {
       var matchingChecklist = getMatchingCheckList(templates[i].checklists[j].name, card);
       if (matchingChecklist == null) {
-        copyChecklist(card, templates[i].checklists[j].id, templates[i].checklists[j].name);
+        copyChecklist(card, templates[i].checklists[j].id, token);
       }
       else {
-        syncChecklistItems(card, templates[i].checklists[j], matchingChecklist);
+        syncChecklistItems(card, templates[i].checklists[j], matchingChecklist, token);
       }
     }
   }
@@ -246,14 +257,14 @@ var getMatchingCheckList = (name, card) => {
 
 }
 
-var copyChecklist = (card, fromChecklistId, fromCheckListName) => {
+var copyChecklist = (card, fromChecklistId, token) => {
 
-  trello.addExistingChecklistToCard(card.id, fromChecklistId)
+  trello[token].addExistingChecklistToCard(card.id, fromChecklistId)
     .catch(err => console.log(err));
 
 }
 
-function syncChecklistItems(card, templateChecklist, matchingChecklist) {
+function syncChecklistItems(card, templateChecklist, matchingChecklist, token) {
 
   for (var i = 0; i < templateChecklist.checkItems.length; i++) {
 
@@ -263,29 +274,29 @@ function syncChecklistItems(card, templateChecklist, matchingChecklist) {
       if (matchingChecklist.checkItems[j].name == templateChecklist.checkItems[i].name) {
         checkItemFound = true;
         if (templateChecklist.checkItems[i].state == "complete") {
-          deleteChecklistItem(matchingChecklist.id, matchingChecklist.checkItems[j].id);
+          deleteChecklistItem(matchingChecklist.id, matchingChecklist.checkItems[j].id, token);
         }
       }
     }
 
     if (templateChecklist.checkItems[i].state == "incomplete" && !checkItemFound) {
-      addChecklistItem(matchingChecklist.id, templateChecklist.checkItems[i].name);
+      addChecklistItem(matchingChecklist.id, templateChecklist.checkItems[i].name, token);
     }
 
   }
 
 }
 
-var addChecklistItem = (checklistId, name) => {
+var addChecklistItem = (checklistId, name, token) => {
 
-  trello.addItemToChecklist(checklistId, name)
+  trello[token].addItemToChecklist(checklistId, name)
     .catch(err => console.log(err));
 
 }
 
-var deleteChecklistItem = (checklistId, checklistItemId) => {
+var deleteChecklistItem = (checklistId, checklistItemId, token) => {
 
-  trello.makeRequest('delete', `/1/checklists/${checklistId}/checkItems${checklistItemId}`)
+  trello[token].makeRequest('delete', `/1/checklists/${checklistId}/checkItems${checklistItemId}`)
     .catch(err => console.log(err));
 
 }
