@@ -6,13 +6,13 @@ This is a Trello Power-Up which is intended to run on glitch.com. The debugger d
 
 When running, and the Power-Up is added to a Trello Board, this happens:
 
-> User creates template card (using Trello functionality).
-> User chooses the List(s) the template card will apply to from a dropdown menu on the template card.
-> When cards are added to that List:
->> Checklists and missing checklist items are added from the Template card.
->> Description from template is appended to the new card.
->> Due date is added from template card. 
-> A menu button on the Board provides interactive access to all the template cards on the board.
+* User creates template card (using Trello functionality).
+* User chooses the List(s) the template card will apply to from a dropdown menu on the template card.
+* When cards are added to that List:
+  * Checklists and missing checklist items are added from the Template card.
+  * Description from template is appended to the new card.
+  * Due date is added from template card. 
+* A menu button on the Board provides interactive access to all the template cards on the board.
 
 Currently working on authorisation, which is working, but is not successfully removed when a user clicks the 'Delete all data' button, if they decide to stop using the Power-Up.
 
