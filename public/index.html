@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Trello Webhooks</title>
+    <meta name="description" content="Frontend for monitoring webhooks">
+    <link id="favicon" rel="icon" href="https://glitch.com/favicon.ico" type="image/x-icon">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+    <script src="/js/webhook-refresh.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>
+        Trello Webhooks
+      </h1>
+    </header>
+
+    <main>
+      <section>
+        <p>Move the cards around on the example <a href="https://trello.com/invite/b/yq3o4Y1u/80930e588269335357e6d176f28496c7/hyperdev-trello-webhook-server-example" target="_new">Trello board</a>, see updates listed below.</p>
+        <button onClick="refresh()">Refresh</button>
+      </section>
+      <section class="updates">
+        <p><b>Updates:</b></p>
+        <ul id="updates">
+        </ul>
+      </section>
+    </main>
+
+    <script src="https://button.glitch.me/button.js" data-style="glitch"></script>
+    <div class="glitchButton" style="position:fixed;top:20px;right:20px;"></div>
+
+    <!-- Your web-app is https, so your scripts need to be too -->
+    <script src="https://code.jquery.com/jquery-2.2.1.min.js"
+            integrity="sha256-gvQgAFzTH6trSrAWoH1iPo9Xc96QxSZ3feW6kem+O00="
+            crossorigin="anonymous"></script>
+
+    <hr>
+    <h1>Hey there! 👋</h1>
+
+    <p>This is the HTML connector for the Power-Up. It will be loaded into a hidden iframe when your Power-Up is enabled.</p>
+    <p>If you're looking for the manifest file, you should head over <a href="./manifest.json">here</a>.</p>
+    <p>Not sure what is going on? Head on over to the <a href="https://glitch.com/edit/#!/trello-power-up?path=README.md">README</a>.</p>
+  
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <script src="js/client.js"></script>
+  </body>
+</html>

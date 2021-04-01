@@ -1,0 +1,28 @@
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="/css/styles.css">
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+  <div id='content'>
+    <div id="content-notTemplate">
+      This card is not a template.
+      <br/>
+      <button class="mod-primary" id="refresh">Make it one!</button>
+    </div>
+    <div id="content-isTemplate">
+      <p>This template applies to:</p>
+      <select name="lists" id="lists" multiple>
+      </select>
+      <br />
+      <button id="update" class="mod-primary">Update</button>
+    </div>
+  </div>
+  <script src="./js/settings.js"></script>
+</body>
+
+</html>
